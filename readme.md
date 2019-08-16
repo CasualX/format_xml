@@ -1,9 +1,20 @@
 Inline XML Templating
 =====================
 
+[![MIT License](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![crates.io](https://img.shields.io/crates/v/format_xml.svg)](https://crates.io/crates/format_xml)
+[![docs.rs](https://docs.rs/format_xml/badge.svg)](https://docs.rs/format_xml)
+
 Minimal compile time templating for XML in Rust!
 
 The `format_xml!` macro by example accepts an XML-like syntax and transforms it into a `format_args!` invocation. We say _XML-like_ because due to limitations of the macro system some concessions had to be made, see the examples below.
+
+In your Cargo.toml add:
+
+```
+[dependencies]
+format_xml = "0.1"
+```
 
 Examples
 --------
@@ -46,12 +57,14 @@ Due to limitations of macros by example, a semicolon is used to separate the val
 format_xml! {
 	<!doctype html>
 	<?xml version="1.0" encoding="UTF-8"?>
-	<open-tag></open-tag>
+	<tag-name></tag-name>
 	<ns:self-closing-tag />
+	<!-- "comment" -->
+	<![CDATA["cdata"]]>
 }.to_string()
 ```
 
-The resulting string is `<!doctype html><?xml version="1.0" encoding="UTF-8"?><open-tag></open-tag><ns:self-closing-tag />`.
+The resulting string is `<!doctype html><?xml version="1.0" encoding="UTF-8"?><tag-name></tag-name><ns:self-closing-tag /><!-- comment --><![CDATA[cdata]]>`.
 
 ### Control flow
 

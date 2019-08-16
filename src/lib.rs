@@ -56,10 +56,12 @@ Due to limitations of macros by example, a semicolon is used to separate the val
 format_xml! {
 	<!doctype html>
 	<?xml version="1.0" encoding="UTF-8"?>
-	<open-tag></open-tag>
+	<tag-name></tag-name>
 	<ns:self-closing-tag />
+	<!-- "comment" -->
+	<![CDATA["cdata"]]>
 }.to_string()
-# ; assert_eq!(result, r#"<!doctype html><?xml version="1.0" encoding="UTF-8"?><open-tag></open-tag><ns:self-closing-tag />"#);
+# ; assert_eq!(result, r#"<!doctype html><?xml version="1.0" encoding="UTF-8"?><tag-name></tag-name><ns:self-closing-tag /><!-- comment --><![CDATA[cdata]]>"#);
 ```
 
 The resulting string is `<!doctype html><?xml version="1.0" encoding="UTF-8"?><open-tag></open-tag><ns:self-closing-tag />`.
@@ -151,6 +153,12 @@ macro_rules! _format_tag1_ {
 	(; $fmt:expr, $($args:expr,)*; <? $($tail:tt)*) => {
 		$crate::_format_ident1_!(_format_attrs1_! _format_tag4_!; concat!($fmt, "<?"), $($args,)*; $($tail)*)
 	};
+	(; $fmt:expr, $($args:expr,)*; <!-- $($tail:tt)*) => {
+		$crate::_format_text1_!(; concat!($fmt, "<!-- "), $($args,)*; $($tail)*)
+	};
+	(; $fmt:expr, $($args:expr,)*; <![CDATA[ $($text:literal)* ]]> $($tail:tt)*) => {
+		$crate::_format_tag1_!(; concat!($fmt, "<![CDATA[", $($text,)* "]]>"), $($args,)*; $($tail)*)
+	};
 	(; $fmt:expr, $($args:expr,)*; <! $($tail:tt)*) => {
 		$crate::_format_ident1_!(_format_attrs1_! _format_tag2_!; concat!($fmt, "<!"), $($args,)*; $($tail)*)
 	};
@@ -207,6 +215,20 @@ macro_rules! _format_tag3_ {
 macro_rules! _format_tag4_ {
 	(; $fmt:expr, $($args:expr,)*; ?> $($tail:tt)*) => {
 		$crate::_format_tag1_!(; concat!($fmt, "?>"), $($args,)*; $($tail)*)
+	};
+}
+
+//----------------------------------------------------------------
+// Parse comments and CDATA
+
+#[doc(hidden)]
+#[macro_export]
+macro_rules! _format_text1_ {
+	(; $fmt:expr, $($args:expr,)*; --> $($tail:tt)*) => {
+		$crate::_format_tag1_!(; concat!($fmt, " -->"), $($args,)*; $($tail)*)
+	};
+	(; $fmt:expr, $($args:expr,)*; $text:literal $($tail:tt)*) => {
+		$crate::_format_text1_!(; concat!($fmt, $text), $($args,)*; $($tail)*)
 	};
 }
 
