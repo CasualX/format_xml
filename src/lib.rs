@@ -1,217 +1,268 @@
 /*!
+Inline XML Templating
+=====================
 
-!*/
+Minimal compile time templating for XML in Rust!
 
-#![feature(slice_patterns)]
+The `format_xml!` macro by example accepts an XML-like syntax and transforms it into a `format_args!` invocation.
+We say _XML-like_ because due to limitations of the macro system some concessions had to be made, see the examples below.
 
-extern crate proc_macro;
-use proc_macro::*;
+Examples
+--------
 
-trait ToVec: Iterator {
-	fn to_vec(self) -> Vec<Self::Item>;
-}
-impl<I: Iterator> ToVec for I {
-	fn to_vec(self) -> Vec<Self::Item> {
-		self.collect()
+### Basic usage
+
+```rust
+# use format_xml::format_xml;
+let point = (20, 30);
+let name = "World";
+
+# let result =
+format_xml! {
+	<svg width="200" height="200">
+		<line x1="0" y1="0" x2={point.0} y2={point.1} stroke="black" stroke-width="2" />
+		<text x={point.1} y={point.0}>"Hello '" {name} "'!"</text>
+	</svg>
+}.to_string()
+# ; assert_eq!(result, r#"<svg width="200" height="200"><line x1="0" y1="0" x2="20" y2="30" stroke="black" stroke-width="2" /><text x="30" y="20">Hello 'World'!</text></svg>"#);
+```
+
+The resulting string is `<svg width="200" height="200"><line x1="0" y1="0" x2="20" y2="30" stroke="black" stroke-width="2" /><text x="30" y="20">Hello 'World!'</text></svg>`.
+
+Note how the expression values to be formatted are inlined in the formatting braces.
+
+### Formatting specifiers
+
+```rust
+# use format_xml::format_xml;
+let value = 42;
+
+# let result =
+format_xml! {
+	<span data-value={value}>{value;#x?}</span>
+}.to_string()
+# ; assert_eq!(result, r#"<span data-value="42">0x2a</span>"#);
+```
+
+The resulting string is `<span data-value="42">0x2a</span>`.
+
+Due to limitations of macros by example, a semicolon is used to separate the value from the formatting specifiers. The rules for the specifiers are exactly the same as the standard library of Rust.
+
+### Supported tags
+
+```rust
+# use format_xml::format_xml;
+# let result =
+format_xml! {
+	<!doctype html>
+	<?xml version="1.0" encoding="UTF-8"?>
+	<open-tag></open-tag>
+	<ns:self-closing-tag />
+}.to_string()
+# ; assert_eq!(result, r#"<!doctype html><?xml version="1.0" encoding="UTF-8"?><open-tag></open-tag><ns:self-closing-tag />"#);
+```
+
+The resulting string is `<!doctype html><?xml version="1.0" encoding="UTF-8"?><open-tag></open-tag><ns:self-closing-tag />`.
+
+### Control flow
+
+```rust
+# use format_xml::format_xml;
+let switch = true;
+let opt = Some("World");
+
+# let result =
+format_xml! {
+	if let Some(name) = (opt) {
+		<h1>"Hello " {name}</h1>
 	}
-}
-
-#[proc_macro]
-pub fn format_xml(args: TokenStream) -> TokenStream {
-	let args = args.into_iter().to_vec();
-
-	let mut fmt = Format::default();
-	process(&args, &mut fmt);
-
-	let string = TokenTree::Literal(Literal::string(&fmt.string));
-	let mut params = vec![string];
-	for arg in fmt.args {
-		params.push(TokenTree::Punct(Punct::new(',', Spacing::Alone)));
-		params.push(TokenTree::Group(Group::new(Delimiter::None, arg)));
-	}
-	let result: TokenStream = vec![
-		TokenTree::Ident(Ident::new("format_args", Span::call_site())),
-		TokenTree::Punct(Punct::new('!', Spacing::Alone)),
-		TokenTree::Group(Group::new(Delimiter::Parenthesis, params.into_iter().collect())),
-	].into_iter().collect();
-	// panic!(result.to_string());
-	result
-}
-
-#[derive(Clone, Default)]
-struct Format {
-	string: String,
-	args: Vec<TokenStream>,
-}
-
-fn process(mut tokens: &[TokenTree], format: &mut Format) {
-	while tokens.len() > 0 {
-		match tokens.get(0) {
-			Some(TokenTree::Punct(punct)) => {
-				if punct.as_char() == '<' {
-					process_tag(&mut tokens, format);
-				}
-				else {
-					panic!("Unexpected punct `{}`, write a literal instead", punct.as_char());
-				}
-			},
-			Some(TokenTree::Literal(lit)) => {
-				process_lit(&lit, format);
-				tokens = &tokens[1..];
-			},
-			Some(TokenTree::Group(group)) => {
-				match group.delimiter() {
-					Delimiter::Brace => {
-						process_arg(group.stream(), format);
-						tokens = &tokens[1..];
-					},
-					_ => panic!("Format args must be grouped by braces `{}`"),
-				}
-			},
-			Some(TokenTree::Ident(ident)) => {
-				panic!("Unexpected ident `{}`, write a literal instead", ident.to_string());
-			},
-			None => break,
+	if (switch) {
+		<ul>
+		for i in (1..=5) {
+			let times_five = i * 5;
+			<li>{i}"*5="{times_five}</li>
 		}
+		</ul>
+	}
+}.to_string()
+# ; assert_eq!(result, r#"<h1>Hello World</h1><ul><li>1*5=5</li><li>2*5=10</li><li>3*5=15</li><li>4*5=20</li><li>5*5=25</li></ul>"#);
+```
+
+The resulting string is `<h1>Hello World</h1><ul><li>1*5=5</li><li>2*5=10</li><li>3*5=15</li><li>4*5=20</li><li>5*5=25</li></ul>`.
+
+Control flow are currently only supported outside tags. They are not supported in attributes. The expressions for `if` and `for` must be surrounded with parentheses due to macro by example limitations.
+
+Limitations
+-----------
+
+This crate is implemented with standard macros by example (`macro_rules!`). Because of this there are various limitations:
+
+* It is not possible to check whether tags are closed by the appropriate closing tag. This crate will happily accept `<open></close>`. It does enforce more simple lexical rules such as rejecting `</tag/>`.
+
+* Escaping of `<`, `&`, `>` and `"` is not automatic. You can trivially break the structure by including these characters in either the formatting string or formatted values. Avoid untrusted input!
+
+* The formatting specifiers are separated from its value by a semicolon instead of a colon.
+
+* The compiler may complain about macro expansion recursion limit being reached, simply apply the suggested fix and increase the limit. This crate implements a 'tt muncher' which are known to hit these limits.
+
+* Text nodes must be valid Rust literals. Bare words are not supported.
+
+ */
+
+#![cfg_attr(not(test), no_std)]
+
+use core::fmt;
+
+/// Implements `std::fmt::Display` for the Fn closure matching fmt's signature.
+#[derive(Copy, Clone)]
+#[repr(transparent)]
+pub struct FnFmt<F: Fn(&mut fmt::Formatter) -> fmt::Result>(pub F);
+impl<F: Fn(&mut fmt::Formatter) -> fmt::Result> fmt::Display for FnFmt<F> {
+	fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+		(self.0)(f)
+	}
+}
+impl<F: Fn(&mut fmt::Formatter) -> fmt::Result> fmt::Debug for FnFmt<F> {
+	fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+		f.write_str("FnFmt([closure])")
 	}
 }
 
-fn process_tag(tokens: &mut &[TokenTree], format: &mut Format) {
-	*tokens = &(*tokens)[1..];
-
-	let mut closing = false;
-	format.string.push_str("<");
-	if let Some(TokenTree::Punct(punct)) = tokens.get(0) {
-		if punct.as_char() == '/' {
-			*tokens = &(*tokens)[1..];
-			closing = true;
-			format.string.push_str("/");
-		}
-	}
-	
-	if let Some(tag_name) = parse_ident(tokens) {
-		for item in tag_name {
-			format.string.push_str(&item.to_string());
-		}
-	}
-
-	if !closing {
-		while process_attr(tokens, format) {}
-	}
-
-	match *tokens {
-		[TokenTree::Punct(punct), ..] if punct.as_char() == '>' => {
-			format.string.push_str(">");
-			*tokens = &(*tokens)[1..];
-		},
-		[TokenTree::Punct(p1), TokenTree::Punct(p2), ..] if p1.as_char() == '/' || p2.as_char() == '>' => {
-			format.string.push_str(" />");
-			*tokens = &(*tokens)[2..];
-		},
-		_ => panic!("expecting '>' closing bracket"),
-	}
+/// Format XML tokens with `format_args!`
+///
+/// See the [module-level documentation](index.html) for more information.
+#[macro_export]
+macro_rules! format_xml {
+	($($tt:tt)*) => {
+		$crate::_format_tag1_!(; "",; $($tt)*)
+	};
 }
-fn process_attr(tokens: &mut &[TokenTree], format: &mut Format) -> bool {
-	process_ident(tokens, format);
-	match parse_ident(tokens) {
-		Some(attr_name) => {
-			format.string.push_str(" ");
-			for item in attr_name {
-				format.string.push_str(&item.to_string());
-			}
 
-			match tokens.get(0) {
-				Some(TokenTree::Punct(punct)) if punct.as_char() == '=' => {
-					format.string.push_str("=");
-					*tokens = &(*tokens)[1..];
+//----------------------------------------------------------------
+// Parse xml tags, text nodes and control flow
 
-					match tokens.get(0) {
-						Some(TokenTree::Literal(lit)) => {
-							format.string.push_str("\"");
-							process_lit(&lit, format);
-							format.string.push_str("\"");
-						},
-						Some(TokenTree::Group(group)) => {
-							format.string.push_str("\"");
-							process_arg(group.stream(), format);
-							format.string.push_str("\"");
-						},
-						_ => panic!("expected literal or group"),
-					}
-
-					*tokens = &(*tokens)[1..];
-					return true;
-				},
-				Some(TokenTree::Punct(punct)) if punct.as_char() == '>' => {
-					return false;
-				},
-				_ => panic!("expected '=' or '>'"),
-			}
-		},
-		_ => return false,
-	}
+#[doc(hidden)]
+#[macro_export]
+macro_rules! _format_tag1_ {
+	// tags
+	(; $fmt:expr, $($args:expr,)*; </ $($tail:tt)*) => {
+		$crate::_format_ident1_!(_format_tag3_!; concat!($fmt, "</"), $($args,)*; $($tail)*)
+	};
+	(; $fmt:expr, $($args:expr,)*; <? $($tail:tt)*) => {
+		$crate::_format_ident1_!(_format_attrs1_! _format_tag4_!; concat!($fmt, "<?"), $($args,)*; $($tail)*)
+	};
+	(; $fmt:expr, $($args:expr,)*; <! $($tail:tt)*) => {
+		$crate::_format_ident1_!(_format_attrs1_! _format_tag2_!; concat!($fmt, "<!"), $($args,)*; $($tail)*)
+	};
+	(; $fmt:expr, $($args:expr,)*; < $($tail:tt)*) => {
+		$crate::_format_ident1_!(_format_attrs1_! _format_tag2_!; concat!($fmt, "<"), $($args,)*; $($tail)*)
+	};
+	// text
+	(; $fmt:expr, $($args:expr,)*; $text:literal $($tail:tt)*) => {
+		$crate::_format_tag1_!(; concat!($fmt, $text), $($args,)*; $($tail)*)
+	};
+	(; $fmt:expr, $($args:expr,)*; {$e:expr} $($tail:tt)*) => {
+		$crate::_format_tag1_!(; concat!($fmt, "{}"), $($args,)* $e,; $($tail)*)
+	};
+	(; $fmt:expr, $($args:expr,)*; {$e:expr;$($s:tt)*} $($tail:tt)*) => {
+		$crate::_format_tag1_!(; concat!($fmt, "{:", $(stringify!($s),)* "}"), $($args,)* $e,; $($tail)*)
+	};
+	// control
+	(; $fmt:expr, $($args:expr,)*; let $p:pat = $e:expr; $($tail:tt)*) => {
+		$crate::_format_tag1_!(; concat!($fmt, "{}"), $($args,)* $crate::FnFmt(|f| match $e { $p => f.write_fmt($crate::format_xml!{$($tail)*}) }),;)
+	};
+	(; $fmt:expr, $($args:expr,)*; if ($e:expr) { $($body:tt)* } $($tail:tt)*) => {
+		$crate::_format_tag1_!(; concat!($fmt, "{}"), $($args,)* $crate::FnFmt(|f| if $e { f.write_fmt($crate::format_xml!{$($body)*}) } else { Ok(()) }),; $($tail)*)
+	};
+	(; $fmt:expr, $($args:expr,)*; if let $p:pat = ($e:expr) { $($body:tt)* } $($tail:tt)*) => {
+		$crate::_format_tag1_!(; concat!($fmt, "{}"), $($args,)* $crate::FnFmt(|f| if let $p = $e { f.write_fmt($crate::format_xml!{$($body)*}) } else { Ok(()) }),; $($tail)*)
+	};
+	(; $fmt:expr, $($args:expr,)*; for $p:pat in ($e:expr) { $($body:tt)* } $($tail:tt)*) => {
+		$crate::_format_tag1_!(; concat!($fmt, "{}"), $($args,)* $crate::FnFmt(|f| { for $p in $e { f.write_fmt($crate::format_xml!{$($body)*})?; } Ok(()) }),; $($tail)*)
+	};
+	// term
+	(; $fmt:expr, $($args:expr,)*;) => {
+		format_args!($fmt $(,$args)*)
+	};
 }
-fn process_lit(lit: &Literal, format: &mut Format) {
-	let string = lit.to_string();
-	let mut string = &string[..];
-
-	if string.len() >= 2 && string.starts_with("\"") && string.ends_with("\"") {
-		string = &string[1..string.len() - 1];
-	}
-
-	let escaped = string
-		.replace("&", "&amp;")
-		.replace("<", "&lt;")
-		.replace(">", "&gt;")
-		.replace("\"", "&quot;")
-		.replace("\'", "&apos;");
-
-	format.string.push_str(&escaped);
+#[doc(hidden)]
+#[macro_export]
+macro_rules! _format_tag2_ {
+	(; $fmt:expr, $($args:expr,)*; > $($tail:tt)*) => {
+		$crate::_format_tag1_!(; concat!($fmt, ">"), $($args,)*; $($tail)*)
+	};
+	(; $fmt:expr, $($args:expr,)*; /> $($tail:tt)*) => {
+		$crate::_format_tag1_!(; concat!($fmt, " />"), $($args,)*; $($tail)*)
+	};
 }
-fn process_arg(stream: TokenStream, format: &mut Format) {
-	// Split the format specifiers from the stream
-	let tokens = stream.into_iter().to_vec();
-	let rpos = tokens.iter().rposition(|token| match token {
-		TokenTree::Punct(punct) if punct.as_char() == ':' => true,
-		_ => false,
-	});
-	if let Some(index) = rpos {
-		format.string.push_str("{:");
-		for token in &tokens[index + 1..] {
-			format.string.push_str(&token.to_string());
-		}
-		format.string.push_str("}");
-		format.args.push(tokens[..index].iter().cloned().collect());
-	}
-	else {
-		format.string.push_str("{}");
-		format.args.push(tokens.into_iter().collect());
-	}
+#[doc(hidden)]
+#[macro_export]
+macro_rules! _format_tag3_ {
+	(; $fmt:expr, $($args:expr,)*; > $($tail:tt)*) => {
+		$crate::_format_tag1_!(; concat!($fmt, ">"), $($args,)*; $($tail)*)
+	};
 }
-fn process_name(tokens: &mut &[TokenTree], format: &mut Format) -> bool {
-	match tokens.get(0) {
-		Some(TokenTree::Ident(ident)) => {
-			format.string.push_str(&ident.to_string());
-			*tokens = &(*tokens)[1..];
-		}
-		_ => return true,
-	}
-	loop {
-		match tokens.get(0) {
-			Some(TokenTree::Punct(punct)) => {
-				if punct.as_char() == '-'
-				format.string.push_str(&punct.to_string());
-				*tokens = &(*tokens)[1..];
-			},
-			_ => return false,
-		}
-		match tokens.get(0) {
-			Some(TokenTree::Ident(ident)) => {
-				format.string.push_str(&ident.to_string());
-				*tokens = &(*tokens)[1..];
-			}
-			_ => return false,
-		}
-	}
+#[doc(hidden)]
+#[macro_export]
+macro_rules! _format_tag4_ {
+	(; $fmt:expr, $($args:expr,)*; ?> $($tail:tt)*) => {
+		$crate::_format_tag1_!(; concat!($fmt, "?>"), $($args,)*; $($tail)*)
+	};
 }
-fn process_
+
+//----------------------------------------------------------------
+// Parse xml names
+
+#[doc(hidden)]
+#[macro_export]
+macro_rules! _format_ident1_ {
+	($($q:ident!)+; $fmt:expr, $($args:expr,)*; $name:ident : $($tail:tt)*) => {
+		$crate::_format_ident2_!($($q!)+; concat!($fmt, stringify!($name), ":"), $($args,)*; $($tail)*)
+	};
+	($($q:ident!)+; $fmt:expr, $($args:expr,)*; $name:ident - $($tail:tt)*) => {
+		$crate::_format_ident2_!($($q!)+; concat!($fmt, stringify!($name), "-"), $($args,)*; $($tail)*)
+	};
+	($next:ident! $($q:ident!)*; $fmt:expr, $($args:expr,)*; $name:ident $($tail:tt)*) => {
+		$crate::$next!($($q!)*; concat!($fmt, stringify!($name)), $($args,)*; $($tail)*)
+	};
+}
+#[doc(hidden)]
+#[macro_export]
+macro_rules! _format_ident2_ {
+	($($q:ident!)+; $fmt:expr, $($args:expr,)*; $name:ident - $($tail:tt)*) => {
+		$crate::_format_ident2_!($($q!)+; concat!($fmt, stringify!($name), "-"), $($args,)*; $($tail)*)
+	};
+	($next:ident! $($q:ident!)*; $fmt:expr, $($args:expr,)*; $name:ident $($tail:tt)*) => {
+		$crate::$next!($($q!)*; concat!($fmt, stringify!($name)), $($args,)*; $($tail)*)
+	};
+}
+
+//----------------------------------------------------------------
+// Parse xml attributes
+
+#[doc(hidden)]
+#[macro_export]
+macro_rules! _format_attrs1_ {
+	($($q:ident!)+; $fmt:expr, $($args:expr,)*; $tail_id:ident $($tail:tt)*) => {
+		$crate::_format_ident1_!(_format_attrs2_! $($q!)+; concat!($fmt, " "), $($args,)*; $tail_id $($tail)*)
+	};
+	($next:ident! $($q:ident!)*; $fmt:expr, $($args:expr,)*; $($tail:tt)*) => {
+		$crate::$next!($($q!)*; $fmt, $($args,)*; $($tail)*)
+	};
+}
+#[doc(hidden)]
+#[macro_export]
+macro_rules! _format_attrs2_ {
+	($($q:ident!)+; $fmt:expr, $($args:expr,)*; = $text:literal $($tail:tt)*) => {
+		$crate::_format_attrs1_!($($q!)*; concat!($fmt, "=\"", $text, '"'), $($args,)*; $($tail)*)
+	};
+	($($q:ident!)+; $fmt:expr, $($args:expr,)*; = {$e:expr} $($tail:tt)*) => {
+		$crate::_format_attrs1_!($($q!)*; concat!($fmt, "=\"{}\""), $($args,)* $e,; $($tail)*)
+	};
+	($($q:ident!)+; $fmt:expr, $($args:expr,)*; = {$e:expr; $($s:tt)*} $($tail:tt)*) => {
+		$crate::_format_attrs1_!($($q!)*; concat!($fmt, "=\"{:", $(stringify!($s),)* "}\""), $($args,)* $e,; $($tail)*)
+	};
+	($($q:ident!)+; $fmt:expr, $($args:expr,)*; $($tail:tt)*) => {
+		$crate::_format_attrs1_!($($q!)*; $fmt, $($args,)*; $($tail)*)
+	};
+}

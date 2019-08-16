@@ -1,30 +1,104 @@
-Inline XML Formatting
+Inline XML Templating
 =====================
 
-Analogue to `format_args` this crate provides a `format_xml` which accepts and formats XML tokens.
+Minimal compile time templating for XML in Rust!
 
-In fact `format_xml` is a procedural macro that does nothing more than generate the equivalent `format_args` invocation!
+The `format_xml!` macro by example accepts an XML-like syntax and transforms it into a `format_args!` invocation. We say _XML-like_ because due to limitations of the macro system some concessions had to be made, see the examples below.
 
 Examples
 --------
 
-Let's dive right into a simple example:
+### Basic usage
 
 ```rust
 let point = (20, 30);
 let name = "World";
 
-let s = format_xml! {
-    <svg width=200 height=200>
-        <line x1=0 y1=0 x2={point.0} y2={point.1} stroke="black" stroke-width=2 />
-        <text x={point.1} y={point.0}>"Hello '" {name} "'!"</text>
-    </svg>
-}.to_string();
+format_xml! {
+	<svg width="200" height="200">
+		<line x1="0" y1="0" x2={point.0} y2={point.1} stroke="black" stroke-width="2" />
+		<text x={point.1} y={point.0}>"Hello '" {name} "'!"</text>
+	</svg>
+}.to_string()
 ```
 
-The resulting string is `<svg width="200" height="200"><line x1="0" y1="0" x2="20" y2="30" stroke="black" stroke-width="2" /><text x="30" y="20">Hello &apos;World!&apos;</text></svg>`.
+The resulting string is `<svg width="200" height="200"><line x1="0" y1="0" x2="20" y2="30" stroke="black" stroke-width="2" /><text x="30" y="20">Hello 'World!'</text></svg>`.
 
-Features
---------
+Note how the expression values to be formatted are inlined in the formatting braces.
 
-Work in Progress
+### Formatting specifiers
+
+```rust
+let value = 42;
+
+format_xml! {
+	<span data-value={value}>{value;#x?}</span>
+}.to_string()
+```
+
+The resulting string is `<span data-value="42">0x2a</span>`.
+
+Due to limitations of macros by example, a semicolon is used to separate the value from the formatting specifiers. The rules for the specifiers are exactly the same as the standard library of Rust.
+
+### Supported tags
+
+```rust
+format_xml! {
+	<!doctype html>
+	<?xml version="1.0" encoding="UTF-8"?>
+	<open-tag></open-tag>
+	<ns:self-closing-tag />
+}.to_string()
+```
+
+The resulting string is `<!doctype html><?xml version="1.0" encoding="UTF-8"?><open-tag></open-tag><ns:self-closing-tag />`.
+
+### Control flow
+
+```rust
+let switch = true;
+let opt = Some("World");
+
+format_xml! {
+	if let Some(name) = (opt) {
+		<h1>"Hello " {name}</h1>
+	}
+	if (switch) {
+		<ul>
+		for i in (1..=5) {
+			let times_five = i * 5;
+			<li>{i}"*5="{times_five}</li>
+		}
+		</ul>
+	}
+}.to_string()
+```
+
+The resulting string is `<h1>Hello World</h1><ul><li>1*5=5</li><li>2*5=10</li><li>3*5=15</li><li>4*5=20</li><li>5*5=25</li></ul>`.
+
+Control flow are currently only supported outside tags. They are not supported in attributes. The expressions for `if` and `for` must be surrounded with parentheses due to macro by example limitations.
+
+Limitations
+-----------
+
+This crate is implemented with standard macros by example (`macro_rules!`). Because of this there are various limitations:
+
+* It is not possible to check whether tags are closed by the appropriate closing tag. This crate will happily accept `<open></close>`. It does enforce more simple lexical rules such as rejecting `</tag/>`.
+
+* Escaping of `<`, `&`, `>` and `"` is not automatic. You can trivially break the structure by including these characters in either the formatting string or formatted values. Avoid untrusted input!
+
+* The formatting specifiers are separated from its value by a semicolon instead of a colon.
+
+* The compiler may complain about macro expansion recursion limit being reached, simply apply the suggested fix and increase the limit. This crate implements a 'tt muncher' which are known to hit these limits.
+
+* Text nodes must be valid Rust literals. Bare words are not supported.
+
+License
+-------
+
+Licensed under [MIT License](https://opensource.org/licenses/MIT), see [license.txt](license.txt).
+
+### Contribution
+
+Unless you explicitly state otherwise, any contribution intentionally submitted
+for inclusion in the work by you, shall be licensed as above, without any additional terms or conditions.

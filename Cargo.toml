@@ -3,5 +3,11 @@ name = "format_xml"
 version = "0.1.0"
 edition = "2018"
 
-[lib]
-proc-macro = true
+authors = ["Casper <CasualX@users.noreply.github.com>"]
+description = "Minimal compile time templating for XML in Rust!"
+documentation = "https://docs.rs/format_xml"
+repository = "https://github.com/CasualX/format_xml"
+keywords = ["xml", "html", "format"]
+categories = ["template-engine"]
+readme = "readme.md"
+license = "MIT"
