@@ -1,13 +1,15 @@
-Inline XML Templating
+Format XML Templating
 =====================
 
 [![MIT License](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![crates.io](https://img.shields.io/crates/v/format_xml.svg)](https://crates.io/crates/format_xml)
 [![docs.rs](https://docs.rs/format_xml/badge.svg)](https://docs.rs/format_xml)
 
-Minimal compile time templating for XML in Rust!
+Minimal compiletime templating for XML in Rust!
 
 The `format_xml!` macro by example accepts an XML-like syntax and transforms it into a `format_args!` invocation. We say _XML-like_ because due to limitations of the macro system some concessions had to be made, see the examples below.
+
+Features of this crate include providing the value to be formatted inline in the formatting braces and control flow for conditionally formatting all in one simple package with zero dependencies!
 
 In your Cargo.toml add:
 
@@ -71,10 +73,15 @@ The resulting string is `<!doctype html><?xml version="1.0" encoding="UTF-8"?><t
 ```rust
 let switch = true;
 let opt = Some("World");
+let result: Result<f32, i32> = Err(13);
 
 format_xml! {
 	if let Some(name) = (opt) {
 		<h1>"Hello " {name}</h1>
+	}
+	match (result) {
+		Ok(f) => { <i>{f}</i> }
+		Err(i) => { <b>{i}</b> }
 	}
 	if (switch) {
 		<ul>
@@ -87,7 +94,7 @@ format_xml! {
 }.to_string()
 ```
 
-The resulting string is `<h1>Hello World</h1><ul><li>1*5=5</li><li>2*5=10</li><li>3*5=15</li><li>4*5=20</li><li>5*5=25</li></ul>`.
+The resulting string is `<h1>Hello World</h1><b>13</b><ul><li>1*5=5</li><li>2*5=10</li><li>3*5=15</li><li>4*5=20</li><li>5*5=25</li></ul>`.
 
 Control flow are currently only supported outside tags. They are not supported in attributes. The expressions for `if` and `for` must be surrounded with parentheses due to macro by example limitations.
 

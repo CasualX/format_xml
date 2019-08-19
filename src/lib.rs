@@ -1,5 +1,5 @@
 /*!
-Inline XML Templating
+Format XML Templating
 =====================
 
 Minimal compile time templating for XML in Rust!
@@ -72,6 +72,7 @@ The resulting string is `<!doctype html><?xml version="1.0" encoding="UTF-8"?><o
 # use format_xml::format_xml;
 let switch = true;
 let opt = Some("World");
+let result: Result<f32, i32> = Err(13);
 
 # let result =
 format_xml! {
@@ -79,6 +80,10 @@ format_xml! {
 		<h1>"Hello " {name}</h1>
 	}
 	if (switch) {
+		match (result) {
+			Ok(f) => { <i>{f}</i> }
+			Err(i) => { <b>{i}</b> }
+		}
 		<ul>
 		for i in (1..=5) {
 			let times_five = i * 5;
@@ -87,7 +92,7 @@ format_xml! {
 		</ul>
 	}
 }.to_string()
-# ; assert_eq!(result, r#"<h1>Hello World</h1><ul><li>1*5=5</li><li>2*5=10</li><li>3*5=15</li><li>4*5=20</li><li>5*5=25</li></ul>"#);
+# ; assert_eq!(result, r#"<h1>Hello World</h1><b>13</b><ul><li>1*5=5</li><li>2*5=10</li><li>3*5=15</li><li>4*5=20</li><li>5*5=25</li></ul>"#);
 ```
 
 The resulting string is `<h1>Hello World</h1><ul><li>1*5=5</li><li>2*5=10</li><li>3*5=15</li><li>4*5=20</li><li>5*5=25</li></ul>`.
@@ -184,6 +189,9 @@ macro_rules! _format_tag1_ {
 	};
 	(; $fmt:expr, $($args:expr,)*; if let $p:pat = ($e:expr) { $($body:tt)* } $($tail:tt)*) => {
 		$crate::_format_tag1_!(; concat!($fmt, "{}"), $($args,)* $crate::FnFmt(|f| if let $p = $e { f.write_fmt($crate::format_xml!{$($body)*}) } else { Ok(()) }),; $($tail)*)
+	};
+	(; $fmt:expr, $($args:expr,)*; match ($e:expr) { $($p:pat => { $($body:tt)* })* } $($tail:tt)*) => {
+		$crate::_format_tag1_!(; concat!($fmt, "{}"), $($args,)* $crate::FnFmt(|f| match $e { $($p => f.write_fmt($crate::format_xml!{$($body)*}),)* }),; $($tail)*)
 	};
 	(; $fmt:expr, $($args:expr,)*; for $p:pat in ($e:expr) { $($body:tt)* } $($tail:tt)*) => {
 		$crate::_format_tag1_!(; concat!($fmt, "{}"), $($args,)* $crate::FnFmt(|f| { for $p in $e { f.write_fmt($crate::format_xml!{$($body)*})?; } Ok(()) }),; $($tail)*)
