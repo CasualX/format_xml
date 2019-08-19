@@ -116,9 +116,10 @@ This crate is implemented with standard macros by example (`macro_rules!`). Beca
 
  */
 
-#![cfg_attr(not(test), no_std)]
+use std::fmt;
 
-use core::fmt;
+mod util;
+pub use self::util::*;
 
 /// Implements `std::fmt::Display` for the Fn closure matching fmt's signature.
 #[derive(Copy, Clone)]
