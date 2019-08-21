@@ -98,6 +98,22 @@ The resulting string is `<h1>Hello World</h1><b>13</b><ul><li>1*5=5</li><li>2*5=
 
 Control flow are currently only supported outside tags. They are not supported in attributes. The expressions for `if` and `for` must be surrounded with parentheses due to macro by example limitations.
 
+### Specialised attribute syntax
+
+```rust
+let has_a = true;
+let has_b = false;
+let make_red = true;
+
+format_xml! {
+	<div class=["class-a": has_a, "class-b": has_b]><span style=["color: red;": make_red]></span></div>
+}.to_string()
+```
+
+The resulting string is `<div class="class-a "><span style="color: red; "></span></div>`.
+
+Dedicated syntax for fixed set of space delimited attribute values where each element can be conditionally included. This is specifically designed to work with the style and class attributes of html.
+
 Limitations
 -----------
 

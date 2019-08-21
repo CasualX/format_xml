@@ -99,6 +99,25 @@ The resulting string is `<h1>Hello World</h1><ul><li>1*5=5</li><li>2*5=10</li><l
 
 Control flow are currently only supported outside tags. They are not supported in attributes. The expressions for `if` and `for` must be surrounded with parentheses due to macro by example limitations.
 
+### Specialised attribute syntax
+
+```rust
+# use format_xml::format_xml;
+let has_a = true;
+let has_b = false;
+let make_red = true;
+
+# let result =
+format_xml! {
+	<div class=["class-a": has_a, "class-b": has_b]><span style=["color: red;": make_red]></span></div>
+}.to_string()
+# ; assert_eq!(result, r#"<div class="class-a "><span style="color: red; "></span></div>"#);
+```
+
+The resulting string is `<div class="class-a "><span style="color: red; "></span></div>`.
+
+Dedicated syntax for fixed set of space delimited attribute values where each element can be conditionally included. This is specifically designed to work with the style and class attributes of html.
+
 Limitations
 -----------
 
@@ -295,6 +314,9 @@ macro_rules! _format_attrs2_ {
 	};
 	($($q:ident!)+; $fmt:expr, $($args:expr,)*; = {$e:expr; $($s:tt)*} $($tail:tt)*) => {
 		$crate::_format_attrs1_!($($q!)*; concat!($fmt, "=\"{:", $(stringify!($s),)* "}\""), $($args,)* $e,; $($tail)*)
+	};
+	($($q:ident!)+; $fmt:expr, $($args:expr,)*; = [$($text:literal : $cond:expr),*$(,)?] $($tail:tt)*) => {
+		$crate::_format_attrs1_!($($q!)*; concat!($fmt, "=\"{}\""), $($args,)* $crate::FnFmt(|f| { $(if $cond { f.write_str(concat!($text, " "))? })* Ok(()) }),; $($tail)*)
 	};
 	($($q:ident!)+; $fmt:expr, $($args:expr,)*; = escape!($($body:tt)*) $($tail:tt)*) => {
 		$crate::_format_attrs1_!($($q!)*; concat!($fmt, "=\"{}\""), $($args,)* $crate::escape!($($body)*),; $($tail)*)
