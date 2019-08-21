@@ -106,7 +106,7 @@ This crate is implemented with standard macros by example (`macro_rules!`). Beca
 
 * It is not possible to check whether tags are closed by the appropriate closing tag. This crate will happily accept `<open></close>`. It does enforce more simple lexical rules such as rejecting `</tag/>`.
 
-* Escaping of `<`, `&`, `>` and `"` is not automatic. You can trivially break the structure by including these characters in either the formatting string or formatted values. Avoid untrusted input!
+* Escaping of `&<>"'` is not automatic. You can trivially break the structure by including these characters in either the formatting string or formatted values. Avoid untrusted input!
 
 * The formatting specifiers are separated from its value by a semicolon instead of a colon.
 
@@ -180,6 +180,9 @@ macro_rules! _format_tag1_ {
 	};
 	(; $fmt:expr, $($args:expr,)*; {$e:expr;$($s:tt)*} $($tail:tt)*) => {
 		$crate::_format_tag1_!(; concat!($fmt, "{:", $(stringify!($s),)* "}"), $($args,)* $e,; $($tail)*)
+	};
+	(; $fmt:expr, $($args:expr,)*; escape!($($body:tt)*) $($tail:tt)*) => {
+		$crate::_format_tag1_!(; concat!($fmt, "{}"), $($args,)* $crate::escape!($($body)*),; $($tail)*)
 	};
 	// control
 	(; $fmt:expr, $($args:expr,)*; let $p:pat = $e:expr; $($tail:tt)*) => {
@@ -292,6 +295,9 @@ macro_rules! _format_attrs2_ {
 	};
 	($($q:ident!)+; $fmt:expr, $($args:expr,)*; = {$e:expr; $($s:tt)*} $($tail:tt)*) => {
 		$crate::_format_attrs1_!($($q!)*; concat!($fmt, "=\"{:", $(stringify!($s),)* "}\""), $($args,)* $e,; $($tail)*)
+	};
+	($($q:ident!)+; $fmt:expr, $($args:expr,)*; = escape!($($body:tt)*) $($tail:tt)*) => {
+		$crate::_format_attrs1_!($($q!)*; concat!($fmt, "=\"{}\""), $($args,)* $crate::escape!($($body)*),; $($tail)*)
 	};
 	($($q:ident!)+; $fmt:expr, $($args:expr,)*; $($tail:tt)*) => {
 		$crate::_format_attrs1_!($($q!)*; $fmt, $($args,)*; $($tail)*)
