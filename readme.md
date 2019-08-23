@@ -79,6 +79,9 @@ format_xml! {
 	if let Some(name) = (opt) {
 		<h1>"Hello " {name}</h1>
 	}
+	else {
+		<!-- "no header" -->
+	}
 	match (result) {
 		Ok(f) => { <i>{f}</i> }
 		Err(i) => { <b>{i}</b> }
@@ -90,6 +93,9 @@ format_xml! {
 			<li>{i}"*5="{times_five}</li>
 		}
 		</ul>
+	}
+	else {
+		<p>"No contents"</p>
 	}
 }.to_string()
 ```
