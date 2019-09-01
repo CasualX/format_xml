@@ -79,8 +79,8 @@ format_xml! {
 	if let Some(name) = (opt) {
 		<h1>"Hello " {name}</h1>
 	}
-	else {
-		<!-- "no header" -->
+	else if (switch) {
+		<h1>"Hello User"</h1>
 	}
 	match (result) {
 		Ok(f) => { <i>{f}</i> }
