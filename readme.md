@@ -7,7 +7,7 @@ Format XML Templating
 
 Minimal compiletime templating for XML in Rust!
 
-The `format_xml!` macro by example accepts an XML-like syntax and transforms it into a `format_args!` invocation. We say _XML-like_ because due to limitations of the macro system some concessions had to be made, see the examples below.
+The `format_xml!` macro accepts an XML-like syntax and transforms it into a `format_args!` invocation. We say _XML-like_ because due to limitations of the macro system some concessions had to be made, see the examples below.
 
 Features of this crate include providing the value to be formatted inline in the formatting braces and control flow for conditionally formatting all in one simple package with zero dependencies!
 
@@ -82,11 +82,11 @@ format_xml! {
 	else if (switch) {
 		<h1>"Hello User"</h1>
 	}
-	match (result) {
-		Ok(f) => { <i>{f}</i> }
-		Err(i) => { <b>{i}</b> }
-	}
 	if (switch) {
+		match (result) {
+			Ok(f) => { <i>{f}</i> }
+			Err(i) => { <b>{i}</b> }
+		}
 		<ul>
 		for i in (1..=5) {
 			let times_five = i * 5;
@@ -112,13 +112,20 @@ let has_b = false;
 let make_red = true;
 
 format_xml! {
-	<div class=["class-a": has_a, "class-b": has_b]><span style=["color: red;": make_red]></span></div>
+	<div class=["class-a": has_a, "class-b": has_b]>
+		<span style=["color: red;": make_red]></span>
+		<p data-attr=("has_a:"{has_a}",has_b:"{has_b})></p>
+		<p data-fmt=|f| { f.write_str(if make_red { "MAKE_RED" } else { "" }) }></p>
+	</div>
 }.to_string()
 ```
 
-The resulting string is `<div class="class-a "><span style="color: red; "></span></div>`.
+The resulting string is `<div class="class-a "><span style="color: red; "></span><p data-attr="has_a:true,has_b:false"></p><p data-fmt="MAKE_RED"></p></div>`.
 
 Dedicated syntax for fixed set of space delimited attribute values where each element can be conditionally included. This is specifically designed to work with the style and class attributes of html.
+
+If attributes require more advanced formatting, the `template!` syntax is available by wrapping the value in parentheses.
+For even more power closure syntax is available to write custom formatting code. The curly braces are required.
 
 Limitations
 -----------

@@ -4,7 +4,7 @@ version = "0.1.2"
 edition = "2018"
 
 authors = ["Casper <CasualX@users.noreply.github.com>"]
-description = "Minimal compile time templating for XML in Rust!"
+description = "Minimal compiletime templating for XML in Rust!"
 documentation = "https://docs.rs/format_xml"
 repository = "https://github.com/CasualX/format_xml"
 keywords = ["xml", "html", "format"]
