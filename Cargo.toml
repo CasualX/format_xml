@@ -1,6 +1,6 @@
 [package]
 name = "format_xml"
-version = "0.1.3"
+version = "0.1.4"
 edition = "2018"
 
 authors = ["Casper <CasualX@users.noreply.github.com>"]

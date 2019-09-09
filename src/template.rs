@@ -110,19 +110,19 @@ macro_rules! _template1_ {
 	};
 	// control
 	($fmt:expr, $($args:expr,)*; let $p:pat = $e:expr; $($tail:tt)*) => {
-		$crate::_template1_!(concat!($fmt, "{}"), $($args,)* $crate::FnFmt(|f| match $e { $p => f.write_fmt($crate::format_vargs!{$($tail)*}) }),;)
+		$crate::_template1_!(concat!($fmt, "{}"), $($args,)* $crate::FnFmt(|f| match $e { $p => f.write_fmt($crate::template!{$($tail)*}) }),;)
 	};
 	($fmt:expr, $($args:expr,)*; if ($e:expr) { $($body:tt)* } $($tail:tt)*) => {
-		$crate::_template2_!($fmt, $($args,)*; f [[if ($e) { f.write_fmt($crate::format_xml!{$($body)*}) }]]; $($tail)*)
+		$crate::_template2_!($fmt, $($args,)*; f [[if ($e) { f.write_fmt($crate::template!{$($body)*}) }]]; $($tail)*)
 	};
 	($fmt:expr, $($args:expr,)*; if let $p:pat = ($e:expr) { $($body:tt)* } $($tail:tt)*) => {
-		$crate::_template2_!($fmt, $($args,)*; f [[if let $p = ($e) { f.write_fmt($crate::format_xml!{$($body)*}) }]]; $($tail)*)
+		$crate::_template2_!($fmt, $($args,)*; f [[if let $p = ($e) { f.write_fmt($crate::template!{$($body)*}) }]]; $($tail)*)
 	};
 	($fmt:expr, $($args:expr,)*; match ($e:expr) { $($p:pat => { $($body:tt)* })* } $($tail:tt)*) => {
-		$crate::_template1_!(concat!($fmt, "{}"), $($args,)* $crate::FnFmt(|f| match $e { $($p => f.write_fmt($crate::format_vargs!{$($body)*}),)* }),; $($tail)*)
+		$crate::_template1_!(concat!($fmt, "{}"), $($args,)* $crate::FnFmt(|f| match $e { $($p => f.write_fmt($crate::template!{$($body)*}),)* }),; $($tail)*)
 	};
 	($fmt:expr, $($args:expr,)*; for $p:pat in ($e:expr) { $($body:tt)* } $($tail:tt)*) => {
-		$crate::_template1_!(concat!($fmt, "{}"), $($args,)* $crate::FnFmt(|f| { for $p in $e { f.write_fmt($crate::format_vargs!{$($body)*})?; } Ok(()) }),; $($tail)*)
+		$crate::_template1_!(concat!($fmt, "{}"), $($args,)* $crate::FnFmt(|f| { for $p in $e { f.write_fmt($crate::template!{$($body)*})?; } Ok(()) }),; $($tail)*)
 	};
 	// term
 	($fmt:expr, $($args:expr,)*;) => {
@@ -134,13 +134,13 @@ macro_rules! _template1_ {
 #[macro_export]
 macro_rules! _template2_ {
 	($fmt:expr, $($args:expr,)*; $f:ident [$($c:tt)*]; else if ($e:expr) { $($body:tt)* } $($tail:tt)*) => {
-		$crate::_template2_!($fmt, $($args,)*; $f [$($c)* [else if ($e) { $f.write_fmt($crate::format_xml!{$($body)*}) }]]; $($tail)*)
+		$crate::_template2_!($fmt, $($args,)*; $f [$($c)* [else if ($e) { $f.write_fmt($crate::template!{$($body)*}) }]]; $($tail)*)
 	};
 	($fmt:expr, $($args:expr,)*; $f:ident [$($c:tt)*]; else if let $p:pat = ($e:expr) { $($body:tt)* } $($tail:tt)*) => {
-		$crate::_template2_!($fmt, $($args,)*; $f [$($c)* [else if let $p = ($e) { $f.write_fmt($crate::format_xml!{$($body)*}) }]]; $($tail)*)
+		$crate::_template2_!($fmt, $($args,)*; $f [$($c)* [else if let $p = ($e) { $f.write_fmt($crate::template!{$($body)*}) }]]; $($tail)*)
 	};
 	($fmt:expr, $($args:expr,)*; $f:ident [$([$($c:tt)*])*]; else { $($body:tt)* } $($tail:tt)*) => {
-		$crate::_template1_!(concat!($fmt, "{}"), $($args,)* $crate::FnFmt(|$f| $($($c)*)* else { $f.write_fmt($crate::format_xml!{$($body)*}) }),; $($tail)*)
+		$crate::_template1_!(concat!($fmt, "{}"), $($args,)* $crate::FnFmt(|$f| $($($c)*)* else { $f.write_fmt($crate::template!{$($body)*}) }),; $($tail)*)
 	};
 	($fmt:expr, $($args:expr,)*; $f:ident [$([$($c:tt)*])*]; $($tail:tt)*) => {
 		$crate::_template1_!(concat!($fmt, "{}"), $($args,)* $crate::FnFmt(|$f| $($($c)*)* else { Ok(()) }),; $($tail)*)
