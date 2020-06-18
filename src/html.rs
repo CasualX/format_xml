@@ -42,7 +42,7 @@ impl<T: fmt::Display, I: Clone + IntoIterator<Item = T>> fmt::Display for Spaced
 ///
 /// ```
 /// let data = [(1.0, 2.0), (13.0, 42.0), (-5.0, 100.0)];
-/// let result = format_xml::format_xml! {
+/// let result = format_xml::xml! {
 /// 	<polygon points={format_xml::spaced_comma_set(data.iter().cloned())} />
 /// }.to_string();
 /// assert_eq!(result, r#"<polygon points="1,2 13,42 -5,100 " />"#);

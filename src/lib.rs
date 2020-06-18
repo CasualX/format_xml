@@ -1,31 +1,31 @@
 /*!
-Format XML Templating
-=====================
+Template XML formatting
+=======================
 
-Minimal compiletime templating for XML in Rust!
+Minimal compiletime templating in Rust!
 
-The [`format_xml!` macro](macro.format_xml.html) accepts an XML-like syntax and transforms it into a `format_args!` invocation.
-We say _XML-like_ because due to limitations of the macro system some concessions had to be made, see the examples below.
-
-See the [`template!` macro](macro.template.html) to get started with regular formatting.
- */
+Get started by taking a look at the [`template!`](macro.template.html) and [`xml!`](macro.xml.html) macros.
+*/
 
 use std::fmt;
 
-#[macro_use]
-mod template;
+mod template_impl;
+pub mod template;
 
-#[macro_use]
-mod xml;
+mod xml_impl;
+pub mod xml;
 
-#[macro_use]
+// backward compatibility
+#[doc(hidden)]
+pub use crate::xml as format_xml;
+
 mod escape;
 pub use self::escape::Escape;
 
 mod html;
 pub use self::html::*;
 
-/// Implements `std::fmt::Display` for the Fn closure matching fmt's signature.
+/// Implements Display for closures.
 #[derive(Copy, Clone)]
 #[repr(transparent)]
 pub struct FnFmt<F: Fn(&mut fmt::Formatter) -> fmt::Result>(pub F);
@@ -39,3 +39,7 @@ impl<F: Fn(&mut fmt::Formatter) -> fmt::Result> fmt::Debug for FnFmt<F> {
 		f.write_str("FnFmt([closure])")
 	}
 }
+
+#[doc(hidden)]
+#[inline(never)]
+pub fn noinline<T, F: FnOnce() -> T>(f: F) -> T { f() }
