@@ -20,7 +20,7 @@ macro_rules! escape {
 		$crate::Escape($e)
 	};
 	($($tt:tt)*) => {
-		$crate::Escape($crate::template!{$($tt)*})
+		$crate::Escape($crate::FnFmt(|_f| { $crate::_template_!({_f} $($tt)*); Ok(()) }))
 	};
 }
 

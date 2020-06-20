@@ -1,5 +1,5 @@
-Format XML Templating
-=====================
+Template XML formatting
+=======================
 
 [![MIT License](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![crates.io](https://img.shields.io/crates/v/format_xml.svg)](https://crates.io/crates/format_xml)
@@ -7,7 +7,7 @@ Format XML Templating
 
 Minimal compiletime templating for XML in Rust!
 
-The `format_xml!` macro accepts an XML-like syntax and transforms it into a `format_args!` invocation. We say _XML-like_ because due to limitations of the macro system some concessions had to be made, see the examples below.
+The `xml!` macro accepts an XML-like syntax and transforms it into a `format_args!` invocation. We say _XML-like_ because due to limitations of the macro system some concessions had to be made, see the examples below.
 
 Features of this crate include providing the value to be formatted inline in the formatting braces and control flow for conditionally formatting all in one simple package with zero dependencies!
 
@@ -27,7 +27,7 @@ Examples
 let point = (20, 30);
 let name = "World";
 
-format_xml! {
+xml! {
 	<svg width="200" height="200">
 		<line x1="0" y1="0" x2={point.0} y2={point.1} stroke="black" stroke-width="2" />
 		<text x={point.1} y={point.0}>"Hello '" {name} "'!"</text>
@@ -44,7 +44,7 @@ Note how the expression values to be formatted are inlined in the formatting bra
 ```rust
 let value = 42;
 
-format_xml! {
+xml! {
 	<span data-value={value}>{value;#x?}</span>
 }.to_string()
 ```
@@ -56,7 +56,7 @@ Due to limitations of macros by example, a semicolon is used to separate the val
 ### Supported tags
 
 ```rust
-format_xml! {
+xml! {
 	<!doctype html>
 	<?xml version="1.0" encoding="UTF-8"?>
 	<tag-name></tag-name>
@@ -75,7 +75,7 @@ let switch = true;
 let opt = Some("World");
 let result: Result<f32, i32> = Err(13);
 
-format_xml! {
+xml! {
 	if let Some(name) = (opt) {
 		<h1>"Hello " {name}</h1>
 	}
@@ -111,7 +111,7 @@ let has_a = true;
 let has_b = false;
 let make_red = true;
 
-format_xml! {
+xml! {
 	<div class=["class-a": has_a, "class-b": has_b]>
 		<span style=["color: red;": make_red]></span>
 		<p data-attr=("has_a:"{has_a}",has_b:"{has_b})></p>
