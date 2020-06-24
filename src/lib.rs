@@ -40,6 +40,9 @@ impl<F: Fn(&mut fmt::Formatter) -> fmt::Result> fmt::Debug for FnFmt<F> {
 	}
 }
 
+// Prevent inlining the messy formatting code by moving it into a noinline function.
+// This could be done by applying the `#[inline(never)]` directly to the closure but this is experimental:
+// error[E0658]: attributes on expressions are experimental
 #[doc(hidden)]
 #[inline(never)]
 pub fn noinline<T, F: FnOnce() -> T>(f: F) -> T { f() }
