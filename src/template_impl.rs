@@ -17,7 +17,7 @@
 /// The resulting string is `Hello World!`.
 ///
 /// Note how the expression values to be formatted are inlined in the formatting braces.
-/// Due to limitations of macros by example the formatting braces are not part of the surrounding string literals.
+/// Due to limitations of declarative macros the formatting braces are not part of the surrounding string literals.
 ///
 /// ### Formatting specifiers
 ///
@@ -31,7 +31,7 @@
 ///
 /// The resulting string is `hex(42) = 0x2a`.
 ///
-/// Due to limitations of macros by example, a semicolon is used to separate the value from the formatting specifiers.
+/// Due to limitations of declarative macros, a semicolon is used to separate the value from the formatting specifiers.
 /// The rules for the specifiers are exactly the same as Rust's standard formatting syntax.
 ///
 /// ### Control flow
@@ -86,7 +86,7 @@
 /// and the closure returns a [`std::fmt::Result`](https://doc.rust-lang.org/std/fmt/type.Result.html).
 #[macro_export]
 macro_rules! template {
-	($($tt:tt)*) => { format_args!("{}", $crate::FnFmt(|_f| { $crate::_template_!({_f} $($tt)*); Ok(()) })) };
+	($($tt:tt)*) => { ::core::format_args!("{}", $crate::FnFmt(|_f| { $crate::_template_!({_f} $($tt)*); Ok(()) })) };
 }
 
 #[macro_export]
@@ -101,10 +101,10 @@ macro_rules! _template_ {
 	};
 	// format
 	({$f:ident $($stmt:stmt)*} {$e:expr} $($tail:tt)*) => {
-		$crate::_template_!({$f $($stmt)* $f.write_fmt(format_args!("{}", $e))?} $($tail)*)
+		$crate::_template_!({$f $($stmt)* $f.write_fmt(::core::format_args!("{}", $e))?} $($tail)*)
 	};
 	({$f:ident $($stmt:stmt)*} {$e:expr;$($s:tt)*} $($tail:tt)*) => {
-		$crate::_template_!({$f $($stmt)* $f.write_fmt(format_args!(concat!("{:", $(stringify!($s),)* "}"), $e))?} $($tail)*)
+		$crate::_template_!({$f $($stmt)* $f.write_fmt(::core::format_args!(concat!("{:", $(stringify!($s),)* "}"), $e))?} $($tail)*)
 	};
 	({$f:ident $($stmt:stmt)*} |$ff:ident| { $($body:stmt)* } $($tail:tt)*) => {
 		$crate::_template_!({$f $($stmt)* { let $ff = &mut *$f; $($body)* }?} $($tail)*)

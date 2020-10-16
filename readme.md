@@ -7,11 +7,11 @@ Template XML formatting
 
 Minimal compiletime templating for XML in Rust!
 
-The `xml!` macro accepts an XML-like syntax and transforms it into a `format_args!` invocation. We say _XML-like_ because due to limitations of the macro system some concessions had to be made, see the examples below.
+The `xml!` macro accepts an XML-like syntax and transforms it into a `format_args!` invocation. We say _XML-like_ because due to limitations of declarative macros some concessions had to be made; see the examples below.
 
 Features of this crate include providing the value to be formatted inline in the formatting braces and control flow for conditionally formatting all in one simple package with zero dependencies!
 
-In your Cargo.toml add:
+In your Cargo.toml, add:
 
 ```
 [dependencies]
@@ -35,7 +35,7 @@ xml! {
 }.to_string()
 ```
 
-The resulting string is `<svg width="200" height="200"><line x1="0" y1="0" x2="20" y2="30" stroke="black" stroke-width="2" /><text x="30" y="20">Hello 'World!'</text></svg>`.
+The resulting string is `<svg width="200" height="200"><line x1="0" y1="0" x2="20" y2="30" stroke="black" stroke-width="2" /><text x="30" y="20">Hello 'World'!</text></svg>`.
 
 Note how the expression values to be formatted are inlined in the formatting braces.
 
@@ -51,7 +51,25 @@ xml! {
 
 The resulting string is `<span data-value="42">0x2a</span>`.
 
-Due to limitations of macros by example, a semicolon is used to separate the value from the formatting specifiers. The rules for the specifiers are exactly the same as the standard library of Rust.
+Due to limitations of declarative macros, a semicolon is used to separate the value from the formatting specifiers. The rules for the specifiers are exactly the same as [the standard library](https://doc.rust-lang.org/std/fmt/index.html) of Rust.
+
+### Composition
+
+```rust
+fn compose(f: &mut std::fmt::Formatter, a: i32) -> std::fmt::Result {
+	f.write_fmt(xml! {
+		<span>{a}</span>
+	})
+}
+
+xml! {
+	<p>|f| { compose(f, 42) }</p>
+}.to_string()
+```
+
+The resulting string is `<p><span>42</span></p>`.
+
+Closure syntax allows capturing of the underlying formatter like you would when writing a custom fmt trait. This enables to compose the final XML from reusable subtemplates.
 
 ### Supported tags
 
@@ -102,7 +120,7 @@ xml! {
 
 The resulting string is `<h1>Hello World</h1><b>13</b><ul><li>1*5=5</li><li>2*5=10</li><li>3*5=15</li><li>4*5=20</li><li>5*5=25</li></ul>`.
 
-Control flow are currently only supported outside tags. They are not supported in attributes. The expressions for `if` and `for` must be surrounded with parentheses due to macro by example limitations.
+Control flow are currently only supported outside tags. They are not supported in attributes. The expressions for `if` and `for` must be surrounded with parentheses due to declarative macro limitations.
 
 ### Specialised attribute syntax
 
@@ -130,7 +148,7 @@ For even more power closure syntax is available to write custom formatting code.
 Limitations
 -----------
 
-This crate is implemented with standard macros by example (`macro_rules!`). Because of this there are various limitations:
+This crate is implemented with declarative macros. Because of this, there are various limitations:
 
 * It is not possible to check whether tags are closed by the appropriate closing tag. This crate will happily accept `<open></close>`. It does enforce more simple lexical rules such as rejecting `</tag/>`.
 
@@ -141,6 +159,8 @@ This crate is implemented with standard macros by example (`macro_rules!`). Beca
 * The compiler may complain about macro expansion recursion limit being reached, simply apply the suggested fix and increase the limit. This crate implements a 'tt muncher' which are known to hit these limits.
 
 * Text nodes must be valid Rust literals. Bare words are not supported.
+
+* Braces must be escaped, eg. `"{{ }}"` results in a single set of `{ }`.
 
 License
 -------
