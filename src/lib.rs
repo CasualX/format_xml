@@ -16,28 +16,32 @@ mod xml_impl;
 pub mod xml;
 
 // backward compatibility
+#[deprecated]
 #[doc(hidden)]
 pub use crate::xml as format_xml;
-
-mod escape;
-pub use self::escape::Escape;
 
 mod html;
 pub use self::html::*;
 
-/// Implements Display for closures.
+#[doc(hidden)]
 #[derive(Copy, Clone)]
 #[repr(transparent)]
-pub struct FnFmt<F: Fn(&mut fmt::Formatter) -> fmt::Result>(pub F);
-impl<F: Fn(&mut fmt::Formatter) -> fmt::Result> fmt::Display for FnFmt<F> {
+pub struct FnFmt<F>(pub F);
+impl<F> fmt::Display for FnFmt<F> where F: Fn(&mut fmt::Formatter) -> fmt::Result {
 	fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
 		(self.0)(f)
 	}
 }
-impl<F: Fn(&mut fmt::Formatter) -> fmt::Result> fmt::Debug for FnFmt<F> {
+impl<F> fmt::Debug for FnFmt<F> where F: Fn(&mut fmt::Formatter) -> fmt::Result {
 	fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-		f.write_str("FnFmt([closure])")
+		f.write_str("fmt([closure])")
 	}
+}
+
+/// Returns a Display implementation using the provided closure.
+#[inline]
+pub fn fmt<F>(f: F) -> impl fmt::Display + fmt::Debug where F: Fn(&mut fmt::Formatter) -> fmt::Result {
+	FnFmt(f)
 }
 
 // Prevent inlining the messy formatting code by moving it into a noinline function.
