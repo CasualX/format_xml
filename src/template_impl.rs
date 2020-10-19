@@ -7,10 +7,11 @@
 /// ### Basic usage
 ///
 /// ```
+/// # use format_xml::template;
 /// let name = "World";
 ///
 /// # let s =
-/// format_xml::template!("Hello "{name}"!").to_string()
+/// template!("Hello "{name}"!").to_string()
 /// # ;assert_eq!(s, "Hello World!");
 /// ```
 ///
@@ -22,10 +23,11 @@
 /// ### Formatting specifiers
 ///
 /// ```
+/// # use format_xml::template;
 /// let value = 42;
 ///
 /// # let s =
-/// format_xml::template!("hex("{value}") = "{value;#x}).to_string()
+/// template!("hex("{value}") = "{value;#x}).to_string()
 /// # ;assert_eq!(s, "hex(42) = 0x2a");
 /// ```
 ///
@@ -37,12 +39,13 @@
 /// ### Control flow
 ///
 /// ```
+/// # use format_xml::template;
 /// let switch = true;
 /// let opt = Some("World");
 /// let result: Result<f32, i32> = Err(13);
 ///
 /// # let s =
-/// format_xml::template! {
+/// template! {
 /// 	if let Some(name) = (opt) {
 /// 		"# Hello " {name}"\n\n"
 /// 	}
@@ -72,8 +75,9 @@
 /// ### Custom formatting
 ///
 /// ```
+/// # use format_xml::template;
 /// # let s =
-/// format_xml::template! { |f| {
+/// template! { |f| {
 /// 	f.write_str("custom formatting")
 /// }}.to_string()
 /// # ;assert_eq!(s, "custom formatting");
@@ -86,7 +90,7 @@
 /// and the closure returns a [`std::fmt::Result`](https://doc.rust-lang.org/std/fmt/type.Result.html).
 #[macro_export]
 macro_rules! template {
-	($($tt:tt)*) => { ::core::format_args!("{}", $crate::FnFmt(|_f| { $crate::_template_!({_f} $($tt)*); Ok(()) })) };
+	($($tt:tt)*) => { format_args!("{}", $crate::fmt(|_f| { $crate::_template_!({_f} $($tt)*); Ok(()) })) };
 }
 
 #[macro_export]
@@ -101,10 +105,10 @@ macro_rules! _template_ {
 	};
 	// format
 	({$f:ident $($stmt:stmt)*} {$e:expr} $($tail:tt)*) => {
-		$crate::_template_!({$f $($stmt)* $f.write_fmt(::core::format_args!("{}", $e))?} $($tail)*)
+		$crate::_template_!({$f $($stmt)* $f.write_fmt(format_args!("{}", $e))?} $($tail)*)
 	};
 	({$f:ident $($stmt:stmt)*} {$e:expr;$($s:tt)*} $($tail:tt)*) => {
-		$crate::_template_!({$f $($stmt)* $f.write_fmt(::core::format_args!(concat!("{:", $(stringify!($s),)* "}"), $e))?} $($tail)*)
+		$crate::_template_!({$f $($stmt)* $f.write_fmt(format_args!(concat!("{:", $(stringify!($s),)* "}"), $e))?} $($tail)*)
 	};
 	({$f:ident $($stmt:stmt)*} |$ff:ident| { $($body:stmt)* } $($tail:tt)*) => {
 		$crate::_template_!({$f $($stmt)* { let $ff = &mut *$f; $($body)* }?} $($tail)*)

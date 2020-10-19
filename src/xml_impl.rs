@@ -219,24 +219,24 @@ macro_rules! _format_tag1_ {
 		$crate::_format_tag1_!(; concat!($($fmt,)* "{}",), $($args,)* $crate::escape!($($body)*),; $($tail)*)
 	};
 	(; concat!($($fmt:expr,)*), $($args:expr,)*; |$f:ident| { $($body:tt)* } $($tail:tt)*) => {
-		$crate::_format_tag1_!(; concat!($($fmt,)* "{}",), $($args,)* $crate::FnFmt(|$f| { $($body)* }),; $($tail)*)
+		$crate::_format_tag1_!(; concat!($($fmt,)* "{}",), $($args,)* $crate::fmt(|$f| { $($body)* }),; $($tail)*)
 	};
 	// control
 	(; concat!($($fmt:expr,)*), $($args:expr,)*; let $p:pat = $e:expr; $($tail:tt)*) => {
-		$crate::_format_tag1_!(; concat!($($fmt,)* "{}",), $($args,)* $crate::FnFmt(|f| match $e { $p => f.write_fmt($crate::xml!{$($tail)*}) }),;)
+		$crate::_format_tag1_!(; concat!($($fmt,)* "{}",), $($args,)* $crate::fmt(|f| match $e { $p => f.write_fmt($crate::xml!{$($tail)*}) }),;)
 	};
 	(; concat!($($fmt:expr,)*), $($args:expr,)*; if $($tail:tt)*) => {
 		$crate::_format_if1_!(; concat!($($fmt,)*), $($args,)*; f []; if $($tail)*)
 	};
 	(; concat!($($fmt:expr,)*), $($args:expr,)*; match ($e:expr) { $($p:pat => { $($body:tt)* })* } $($tail:tt)*) => {
-		$crate::_format_tag1_!(; concat!($($fmt,)* "{}",), $($args,)* $crate::FnFmt(|f| match $e { $($p => f.write_fmt($crate::xml!{$($body)*}),)* }),; $($tail)*)
+		$crate::_format_tag1_!(; concat!($($fmt,)* "{}",), $($args,)* $crate::fmt(|f| match $e { $($p => f.write_fmt($crate::xml!{$($body)*}),)* }),; $($tail)*)
 	};
 	(; concat!($($fmt:expr,)*), $($args:expr,)*; for $p:pat in ($e:expr) { $($body:tt)* } $($tail:tt)*) => {
-		$crate::_format_tag1_!(; concat!($($fmt,)* "{}",), $($args,)* $crate::FnFmt(|f| { for $p in $e { f.write_fmt($crate::xml!{$($body)*})?; } Ok(()) }),; $($tail)*)
+		$crate::_format_tag1_!(; concat!($($fmt,)* "{}",), $($args,)* $crate::fmt(|f| { for $p in $e { f.write_fmt($crate::xml!{$($body)*})?; } Ok(()) }),; $($tail)*)
 	};
 	// term
 	(; concat!($($fmt:expr,)*), $($args:expr,)*;) => {
-		::core::format_args!(concat!($($fmt,)*) $(,$args)*)
+		format_args!(concat!($($fmt,)*) $(,$args)*)
 	};
 }
 #[doc(hidden)]
@@ -287,10 +287,10 @@ macro_rules! _format_if2_ {
 		$crate::_format_if2_!(; concat!($($fmt,)*), $($args,)*; $f [$($c)* [else if let $p = ($e) { $f.write_fmt($crate::xml!{$($body)*}) }]]; $($tail)*)
 	};
 	(; concat!($($fmt:expr,)*), $($args:expr,)*; $f:ident [$([$($c:tt)*])*]; else { $($body:tt)* } $($tail:tt)*) => {
-		$crate::_format_tag1_!(; concat!($($fmt,)* "{}",), $($args,)* $crate::FnFmt(|$f| $($($c)*)* else { $f.write_fmt($crate::xml!{$($body)*}) }),; $($tail)*)
+		$crate::_format_tag1_!(; concat!($($fmt,)* "{}",), $($args,)* $crate::fmt(|$f| $($($c)*)* else { $f.write_fmt($crate::xml!{$($body)*}) }),; $($tail)*)
 	};
 	(; concat!($($fmt:expr,)*), $($args:expr,)*; $f:ident [$([$($c:tt)*])*]; $($tail:tt)*) => {
-		$crate::_format_tag1_!(; concat!($($fmt,)* "{}",), $($args,)* $crate::FnFmt(|$f| $($($c)*)* else { Ok(()) }),; $($tail)*)
+		$crate::_format_tag1_!(; concat!($($fmt,)* "{}",), $($args,)* $crate::fmt(|$f| $($($c)*)* else { Ok(()) }),; $($tail)*)
 	};
 }
 
@@ -367,16 +367,16 @@ macro_rules! _format_attrs2_ {
 		$crate::_format_attrs1_!($($q!)*; concat!($($fmt,)* "=\"{:", $(stringify!($s),)* "}\"",), $($args,)* $e,; $($tail)*)
 	};
 	($($q:ident!)+; concat!($($fmt:expr,)*), $($args:expr,)*; = [$($text:literal : $cond:expr),*$(,)?] $($tail:tt)*) => {
-		$crate::_format_attrs1_!($($q!)*; concat!($($fmt,)* "=\"{}\"",), $($args,)* $crate::FnFmt(|f| { $(if $cond { f.write_str(concat!($text, " "))? })* Ok(()) }),; $($tail)*)
+		$crate::_format_attrs1_!($($q!)*; concat!($($fmt,)* "=\"{}\"",), $($args,)* $crate::fmt(|f| { $(if $cond { f.write_str(concat!($text, " "))? })* Ok(()) }),; $($tail)*)
 	};
 	($($q:ident!)+; concat!($($fmt:expr,)*), $($args:expr,)*; = ($($body:tt)*) $($tail:tt)*) => {
-		$crate::_format_attrs1_!($($q!)*; concat!($($fmt,)* "=\"{}\"",), $($args,)* $crate::FnFmt(|f| f.write_fmt($crate::template!($($body)*))),; $($tail)*)
+		$crate::_format_attrs1_!($($q!)*; concat!($($fmt,)* "=\"{}\"",), $($args,)* $crate::fmt(|f| f.write_fmt($crate::template!($($body)*))),; $($tail)*)
 	};
 	($($q:ident!)+; concat!($($fmt:expr,)*), $($args:expr,)*; = escape!($($body:tt)*) $($tail:tt)*) => {
 		$crate::_format_attrs1_!($($q!)*; concat!($($fmt,)* "=\"{}\"",), $($args,)* $crate::escape!($($body)*),; $($tail)*)
 	};
 	($($q:ident!)+; concat!($($fmt:expr,)*), $($args:expr,)*; = |$f:ident| { $($body:tt)* } $($tail:tt)*) => {
-		$crate::_format_attrs1_!($($q!)*; concat!($($fmt,)* "=\"{}\"",), $($args,)* $crate::FnFmt(|$f| { $($body)* }),; $($tail)*)
+		$crate::_format_attrs1_!($($q!)*; concat!($($fmt,)* "=\"{}\"",), $($args,)* $crate::fmt(|$f| { $($body)* }),; $($tail)*)
 	};
 	($($q:ident!)+; concat!($($fmt:expr,)*), $($args:expr,)*; $($tail:tt)*) => {
 		$crate::_format_attrs1_!($($q!)*; concat!($($fmt,)*), $($args,)*; $($tail)*)
