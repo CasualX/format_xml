@@ -137,11 +137,11 @@ macro_rules! _template_ {
 #[doc(hidden)]
 #[macro_export]
 macro_rules! _template_text_ {
-	({$f:ident $($stmt:stmt)*} $string:expr, $text:literal $($tail:tt)*) => {
-		$crate::_template_text_!({$f $($stmt)*} concat!($string, $text), $($tail)*)
+	({$f:ident $($stmt:stmt)*} concat!($($texts:literal),*), $text:literal $($tail:tt)*) => {
+		$crate::_template_text_!({$f $($stmt)*} concat!($($texts,)* $text), $($tail)*)
 	};
-	({$f:ident $($stmt:stmt)*} $string:expr, $($tail:tt)*) => {
-		$crate::_template_!({$f $($stmt)* $f.write_str($string)?} $($tail)*)
+	({$f:ident $($stmt:stmt)*} concat!($($texts:literal),*), $($tail:tt)*) => {
+		$crate::_template_!({$f $($stmt)* $f.write_str(concat!($($texts),*))?} $($tail)*)
 	};
 }
 
