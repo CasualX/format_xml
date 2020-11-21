@@ -15,11 +15,6 @@ pub mod template;
 mod xml_impl;
 pub mod xml;
 
-// backward compatibility
-#[deprecated]
-#[doc(hidden)]
-pub use crate::xml as format_xml;
-
 mod html;
 pub use self::html::*;
 
