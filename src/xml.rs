@@ -1,50 +1,50 @@
 /*!
-Replaces the standard formatting macros using [xml syntax](macro.xml.html).
+Replaces the standard formatting macros using [xml syntax](crate::xml!).
 */
 
-/// Replaces `print!` using [xml syntax](macro.xml.html).
+/// Replaces `print!` using [xml syntax](crate::xml!).
 #[doc(hidden)]
 #[macro_export]
 macro_rules! xprint {
 	($($tt:tt)+) => { $crate::noinline(|| ::std::print!("{}", $crate::xml!($($tt)*))) };
 }
-/// Replaces `println!` using [xml syntax](macro.xml.html).
+/// Replaces `println!` using [xml syntax](crate::xml!).
 #[doc(hidden)]
 #[macro_export]
 macro_rules! xprintln {
 	($($tt:tt)+) => { $crate::noinline(|| ::std::println!("{}", $crate::xml!($($tt)*))) };
 }
-/// Replaces `eprint!` using [xml syntax](macro.xml.html).
+/// Replaces `eprint!` using [xml syntax](crate::xml!).
 #[doc(hidden)]
 #[macro_export]
 macro_rules! xeprint {
 	($($tt:tt)+) => { $crate::noinline(|| ::std::eprint!("{}", $crate::xml!($($tt)*))) };
 }
-/// Replaces `eprintln!` using [xml syntax](macro.xml.html).
+/// Replaces `eprintln!` using [xml syntax](crate::xml!).
 #[doc(hidden)]
 #[macro_export]
 macro_rules! xeprintln {
 	($($tt:tt)+) => { $crate::noinline(|| ::std::eprintln!("{}", $crate::xml!($($tt)*))) };
 }
-/// Replaces `write!` using [xml syntax](macro.xml.html).
+/// Replaces `write!` using [xml syntax](crate::xml!).
 #[doc(hidden)]
 #[macro_export]
 macro_rules! xwrite {
 	($dst:expr, $($tt:tt)+) => { $crate::noinline(|| ::core::write!($dst, "{}", $crate::xml!($($tt)*))) };
 }
-/// Replaces `writeln!` using [xml syntax](macro.xml.html).
+/// Replaces `writeln!` using [xml syntax](crate::xml!).
 #[doc(hidden)]
 #[macro_export]
 macro_rules! xwriteln {
 	($dst:expr, $($tt:tt)+) => { $crate::noinline(|| ::core::writeln!($dst, "{}", $crate::xml!($($tt)*))) };
 }
-/// Replaces `format!` using [xml syntax](macro.xml.html).
+/// Replaces `format!` using [xml syntax](crate::xml!).
 #[doc(hidden)]
 #[macro_export]
 macro_rules! xformat {
 	($($tt:tt)+) => { $crate::noinline(|| ::std::format!("{}", $crate::xml!($($tt)*))) };
 }
-/// Replaces `panic!` using [xml syntax](macro.xml.html).
+/// Replaces `panic!` using [xml syntax](crate::xml!).
 #[doc(hidden)]
 #[macro_export]
 macro_rules! xpanic {

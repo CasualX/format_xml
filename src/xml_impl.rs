@@ -5,7 +5,7 @@
 /// # Safety
 ///
 /// Arguments are not escaped by default!
-/// Use the [`escape!`](macro.escape.html) macro to format and html escape its contents.
+/// Use the [`escape!`] macro to format and html escape its contents.
 ///
 /// # Examples
 ///
@@ -47,7 +47,7 @@
 ///
 /// The resulting string is `<span data-value="42">0x2a</span>`.
 ///
-/// Due to limitations of declarative macros, a semicolon is used to separate the value from the formatting specifiers. The rules for the specifiers are exactly the same as [the standard library](https://doc.rust-lang.org/std/fmt/index.html) of Rust.
+/// Due to limitations of declarative macros, a semicolon is used to separate the value from the formatting specifiers. The rules for the specifiers are exactly the same as [the standard library](std::fmt) of Rust.
 ///
 /// ### Composition
 ///

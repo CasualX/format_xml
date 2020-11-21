@@ -2,7 +2,7 @@ use std::fmt;
 
 /// Formats the arguments while escaping `&<>"'` with their equivalent entities.
 ///
-/// Accepts an expression or a [string template](macro.template.html).
+/// Accepts an expression or a [string template](crate::template!).
 ///
 /// # Examples
 ///

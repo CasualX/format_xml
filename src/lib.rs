@@ -4,7 +4,7 @@ Template XML formatting
 
 Minimal compiletime templating in Rust!
 
-Get started by taking a look at the [`template!`](macro.template.html) and [`xml!`](macro.xml.html) macros.
+Get started by taking a look at the [`template!`] and [`xml!`] macros.
 */
 
 use std::fmt;

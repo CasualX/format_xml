@@ -86,8 +86,7 @@
 /// If all else fails the closure syntax enables to write custom formatting code.
 /// The signature is the same as the `fmt` method of Rust's standard formatting traits.
 ///
-/// `f` is [`std::fmt::Formatter`](https://doc.rust-lang.org/std/fmt/struct.Formatter.html)
-/// and the closure returns a [`std::fmt::Result`](https://doc.rust-lang.org/std/fmt/type.Result.html).
+/// `f` is [`&mut Formatter`](std::fmt::Formatter) and the closure returns a [`Result`](std::fmt::Result).
 #[macro_export]
 macro_rules! template {
 	($($tt:tt)*) => { format_args!("{}", $crate::fmt(|_f| { $crate::_template_!({_f} $($tt)*); Ok(()) })) };
