@@ -1,47 +1,33 @@
 /*!
-Template XML formatting
-=======================
+Fast, minimal, feature-rich, xml-like formatting syntax for Rust!
 
-Minimal compiletime templating in Rust!
+We say _xml-like_ because due to limitations and flexibility some concessions had to be made.
 
-Get started by taking a look at the [`template!`] and [`xml!`] macros.
+Features include:
+
+* Arbitrary expressions inside the formatting braces
+* Generates optimized Rust code at compiletime
+* Auto-escaping control characters.
+* Supports rust-analyzer auto complete, refactoring and more!
+* Supports Rust's standard formatting specifiers
+* Control flow allows conditional and repeated formatting
+* Capture variables by value or by reference
+* Escape hatch to inject custom formatting code
+
+See [`xfmt!`] for more information.
 */
 
-use std::fmt;
+mod xfmt;
+mod prelude;
 
-mod template_impl;
-pub mod template;
-
-mod xml_impl;
-pub mod xml;
-
-mod html;
-pub use self::html::*;
+mod escape;
+pub use self::escape::*;
 
 #[doc(hidden)]
-#[derive(Copy, Clone)]
-#[repr(transparent)]
-pub struct FnFmt<F>(pub F);
-impl<F> fmt::Display for FnFmt<F> where F: Fn(&mut fmt::Formatter) -> fmt::Result {
-	fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-		(self.0)(f)
-	}
-}
-impl<F> fmt::Debug for FnFmt<F> where F: Fn(&mut fmt::Formatter) -> fmt::Result {
-	fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-		f.write_str("fmt([closure])")
-	}
-}
+pub use fmtools::{__fmt, obfstr};
 
-/// Returns a Display implementation using the provided closure.
-#[inline]
-pub fn fmt<F>(f: F) -> impl fmt::Display + fmt::Debug where F: Fn(&mut fmt::Formatter) -> fmt::Result {
-	FnFmt(f)
-}
+pub use fmtools::{fmt, join};
 
-// Prevent inlining the messy formatting code by moving it into a noinline function.
-// This could be done by applying the `#[inline(never)]` directly to the closure but this is experimental:
-// error[E0658]: attributes on expressions are experimental
-#[doc(hidden)]
-#[inline(never)]
-pub fn noinline<T, F: FnOnce() -> T>(f: F) -> T { f() }
+#[cfg(doc)]
+#[doc = include_str!("../readme.md")]
+fn readme() {}
