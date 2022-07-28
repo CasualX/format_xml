@@ -1,13 +1,23 @@
 [package]
 name = "format_xml"
-version = "0.2.0"
-edition = "2018"
-
+version = "0.3.0"
 authors = ["Casper <CasualX@users.noreply.github.com>"]
-description = "Minimal compiletime templating for XML in Rust!"
+edition = "2018"
+license = "MIT"
+
+description = "Fast, minimal, feature-rich, xml-like formatting syntax for Rust!"
 documentation = "https://docs.rs/format_xml"
 repository = "https://github.com/CasualX/format_xml"
-keywords = ["xml", "html", "svg", "template", "format"]
-categories = ["template-engine"]
 readme = "readme.md"
-license = "MIT"
+keywords = ["xml", "html", "svg", "template", "format"]
+categories = ["no-std", "template-engine"]
+
+[features]
+default = ["std"]
+std = []
+
+# Optional feature to obfuscate all the string literals
+obfstr = ["fmtools/obfstr"]
+
+[dependencies]
+fmtools = "0.1"

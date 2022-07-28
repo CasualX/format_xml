@@ -1,21 +1,30 @@
-Template XML formatting
-=======================
+Xml-like formatting
+===================
 
 [![MIT License](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![crates.io](https://img.shields.io/crates/v/format_xml.svg)](https://crates.io/crates/format_xml)
 [![docs.rs](https://docs.rs/format_xml/badge.svg)](https://docs.rs/format_xml)
+[![Build status](https://github.com/CasualX/format_xml/workflows/CI/badge.svg)](https://github.com/CasualX/format_xml/actions)
 
-Minimal compiletime templating for XML in Rust!
+Fast, minimal, feature-rich, xml-like formatting syntax for Rust!
 
-The `xml!` macro accepts an XML-like syntax and transforms it into a `format_args!` invocation. We say _XML-like_ because due to limitations of declarative macros some concessions had to be made; see the examples below.
+We say _xml-like_ because due to limitations and flexibility some concessions had to be made; see the examples below.
 
-Features of this crate include providing the value to be formatted inline in the formatting braces and control flow for conditionally formatting all in one simple package with zero dependencies!
+Features include:
+
+* Arbitrary expressions inside the formatting braces
+* Generates optimized Rust code at compiletime
+* Supports rust-analyzer auto complete, refactoring and more!
+* Supports Rust's standard formatting specifiers
+* Control flow allows conditional and repeated formatting
+* Capture variables by value or by reference
+* Escape hatch to inject custom formatting code
 
 In your Cargo.toml, add:
 
-```
+```text
 [dependencies]
-format_xml = "0.1"
+format_xml = "0.2"
 ```
 
 Examples
@@ -27,140 +36,160 @@ Examples
 let point = (20, 30);
 let name = "World";
 
-xml! {
+let string = format_xml::format! {
 	<svg width="200" height="200">
 		<line x1="0" y1="0" x2={point.0} y2={point.1} stroke="black" stroke-width="2" />
-		<text x={point.1} y={point.0}>"Hello '" {name} "'!"</text>
+		<text x={point.1} y={point.0}>"Hello '"{name}"'!"</text>
 	</svg>
-}.to_string()
+};
+
+assert_eq!(string, r#"<svg width="200" height="200"><line x1="0" y1="0" x2="20" y2="30" stroke="black" stroke-width="2" /><text x="30" y="20">Hello 'World'!</text></svg>"#);
 ```
 
-The resulting string is `<svg width="200" height="200"><line x1="0" y1="0" x2="20" y2="30" stroke="black" stroke-width="2" /><text x="30" y="20">Hello 'World'!</text></svg>`.
+The value arguments can be arbitrary expressions. They are inlined in the formatting braces and are outside the string literals.
 
-Note how the expression values to be formatted are inlined in the formatting braces.
+The values inside formatting braces are escaped by default, the text literals are not.
+Use the [escape hatch](#escape-hatch) to bypass the automatic escaping.
 
 ### Formatting specifiers
 
 ```rust
 let value = 42;
 
-xml! {
-	<span data-value={value}>{value;#x?}</span>
-}.to_string()
+let string = format_xml::format! {
+	<span data-value={value}>{value:#x?}</span>
+};
+
+assert_eq!(string, r#"<span data-value="42">0x2a</span>"#);
 ```
 
-The resulting string is `<span data-value="42">0x2a</span>`.
+The rules for the specifiers are exactly the same as [the standard library](https://doc.rust-lang.org/std/fmt/index.html) of Rust.
 
-Due to limitations of declarative macros, a semicolon is used to separate the value from the formatting specifiers. The rules for the specifiers are exactly the same as [the standard library](https://doc.rust-lang.org/std/fmt/index.html) of Rust.
-
-### Composition
+### Escaping
 
 ```rust
-fn compose(f: &mut std::fmt::Formatter, a: i32) -> std::fmt::Result {
-	f.write_fmt(xml! {
-		<span>{a}</span>
-	})
-}
+let value = "\"quote\"";
+let text = "<script>&</script>";
 
-xml! {
-	<p>|f| { compose(f, 42) }</p>
-}.to_string()
+let string = format_xml::format! {
+	<p data-value={value}>{text}</p>
+};
+
+assert_eq!(string, r#"<p data-value="&quot;quote&quot;">&lt;script&gt;&amp;&lt;/script&gt;</p>"#);
 ```
 
-The resulting string is `<p><span>42</span></p>`.
+The values inside formatting braces are escaped by default, the text literals are not.
 
-Closure syntax allows capturing of the underlying formatter like you would when writing a custom fmt trait. This enables to compose the final XML from reusable subtemplates.
+* Text elements escape `<`, `&`, `>`.
+* Attribute values escape `<`, `&`, `>`, `'`, `"`.
+* Comment nodes escape `--` by removing it altogether.
+* CDATA sections escape `]]>`.
 
-### Supported tags
+Escaping is not implemented in some HTML contexts:
+inside `<script>`, `<style>` tags or their respective attribute equivalents (event lers and inline styles),
+do not format user controlled values in these locations!
+
+### Supported syntax
 
 ```rust
-xml! {
+let string = format_xml::format! {
 	<!doctype html>
 	<?xml version="1.0" encoding="UTF-8"?>
 	<tag-name></tag-name>
-	<ns:self-closing-tag />
+	<self-closing-tag />
 	<!-- "comment" -->
 	<![CDATA["cdata"]]>
-}.to_string()
+};
+
+assert_eq!(string, r#"<!doctype html><?xml version="1.0" encoding="UTF-8"?><tag-name></tag-name><self-closing-tag /><!-- comment --><![CDATA[cdata]]>"#);
 ```
 
-The resulting string is `<!doctype html><?xml version="1.0" encoding="UTF-8"?><tag-name></tag-name><ns:self-closing-tag /><!-- comment --><![CDATA[cdata]]>`.
+Examples of element naming and namespace syntax support:
+
+```rust
+let string = format_xml::format! {
+	<tag>
+	<tag-foo>
+	<tag.foo>
+	<ns:tag>
+	<"_t-0.z">
+};
+
+assert_eq!(string, r#"<tag><tag-foo><tag.foo><ns:tag><_t-0.z>"#);
+```
+
+There are no restrictions on matching open/close tags or reject tags which cannot be self-closing.
+
+Unfinished implementation:
+
+* Document type definitions (DTD) are not correctly implemented. The `<!doctype>` tag is barely functional.
+* Processing instructions are not correctly implemented. The `<?xml?>` tag is barely functional.
 
 ### Control flow
 
 ```rust
 let switch = true;
 let opt = Some("World");
-let result: Result<f32, i32> = Err(13);
 
-xml! {
+let string = format_xml::format! {
 	if let Some(name) = (opt) {
-		<h1>"Hello " {name}</h1>
+		<h1>"Hello "{name}</h1>
 	}
 	else if (switch) {
 		<h1>"Hello User"</h1>
 	}
-	if (switch) {
-		match (result) {
-			Ok(f) => { <i>{f}</i> }
-			Err(i) => { <b>{i}</b> }
-		}
-		<ul>
-		for i in (1..=5) {
-			let times_five = i * 5;
-			<li>{i}"*5="{times_five}</li>
-		}
-		</ul>
-	}
-	else {
-		<p>"No contents"</p>
-	}
-}.to_string()
+};
+
+assert_eq!(string, "<h1>Hello World</h1>");
 ```
-
-The resulting string is `<h1>Hello World</h1><b>13</b><ul><li>1*5=5</li><li>2*5=10</li><li>3*5=15</li><li>4*5=20</li><li>5*5=25</li></ul>`.
-
-Control flow are currently only supported outside tags. They are not supported in attributes. The expressions for `if` and `for` must be surrounded with parentheses due to declarative macro limitations.
-
-### Specialised attribute syntax
 
 ```rust
-let has_a = true;
-let has_b = false;
-let make_red = true;
+let string: Result<f32, i32> = Err(13);
 
-xml! {
-	<div class=["class-a": has_a, "class-b": has_b]>
-		<span style=["color: red;": make_red]></span>
-		<p data-attr=("has_a:"{has_a}",has_b:"{has_b})></p>
-		<p data-fmt=|f| { f.write_str(if make_red { "MAKE_RED" } else { "" }) }></p>
-	</div>
-}.to_string()
+let string = format_xml::format! {
+	match string {
+		Ok(f) => <i>{f}</i>,
+		Err(i) => <b>{i}</b>,
+	}
+};
+
+assert_eq!(string, "<b>13</b>");
 ```
 
-The resulting string is `<div class="class-a "><span style="color: red; "></span><p data-attr="has_a:true,has_b:false"></p><p data-fmt="MAKE_RED"></p></div>`.
+```rust
+let string = format_xml::format! {
+	<ul>
+	for i in (1..=5) {
+		let times_five = i * 5;
+		<li>{i}"*5="{times_five}</li>
+	}
+	</ul>
+};
 
-Dedicated syntax for fixed set of space delimited attribute values where each element can be conditionally included. This is specifically designed to work with the style and class attributes of html.
+assert_eq!(string, "<ul><li>1*5=5</li><li>2*5=10</li><li>3*5=15</li><li>4*5=20</li><li>5*5=25</li></ul>");
+```
 
-If attributes require more advanced formatting, the `template!` syntax is available by wrapping the value in parentheses.
-For even more power closure syntax is available to write custom formatting code. The curly braces are required.
+Control flow is only supported outside tags, not in attributes.
 
-Limitations
------------
+### Escape hatch
 
-This crate is implemented with declarative macros. Because of this, there are various limitations:
+```rust
+fn compose(f: &mut std::fmt::Formatter, a: i32) -> std::fmt::Result {
+	format_xml::write!(f, <span>{a}</span>)
+}
 
-* It is not possible to check whether tags are closed by the appropriate closing tag. This crate will happily accept `<open></close>`. It does enforce more simple lexical rules such as rejecting `</tag/>`.
+let string = format_xml::format! {
+	<p>|f| compose(f, 42)?;</p>
+};
 
-* Escaping of `<`, `&`, `>` and `"` is not automatic. You can trivially break the structure by including these characters in either the formatting string or formatted values. Avoid untrusted input!
+assert_eq!(string, r#"<p><span>42</span></p>"#);
+```
 
-* The formatting specifiers are separated from its value by a semicolon instead of a colon.
+Closure syntax provides an escape hatch to inject code if needed.
+The argument's type is [`&mut Formatter`](https://doc.rust-lang.org/std/fmt/struct.Formatter.html).
 
-* The compiler may complain about macro expansion recursion limit being reached, simply apply the suggested fix and increase the limit. This crate implements a 'tt muncher' which are known to hit these limits.
-
-* Text nodes must be valid Rust literals. Bare words are not supported.
-
-* Braces must be escaped, eg. `"{{ }}"` results in a single set of `{ }`.
+Important! Anything written to the formatter `f` is not escaped.
+This makes it useful to compose different components wich is not possible with `{}`.
 
 License
 -------
